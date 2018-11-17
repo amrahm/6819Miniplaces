@@ -14,15 +14,15 @@ from tqdm import tqdm
 import platform
 
 
-def run():
-    # Parameters
-    num_epochs = 500
-    output_period = 100
-    batch_size = 32
+# Parameters
+number_of_epochs = 500
+output_period = 100
+size_of_batch = 32
+model_to_use = resnet_34()
 
+def run(num_epochs, out_period, batch_size, model):
     # setup the device for running
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = resnet_34()
     model = model.to(device)
 
     train_loader, val_loader = dataset.get_data_loaders(batch_size)
@@ -34,8 +34,6 @@ def run():
     # optimizer = optim.SGD(model.parameters(), lr=1e-3, nesterov=True)
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
     # optimizer = optim.Nesterov(model.parameters(), lr=1e-3)
-
-    best_val_accuracy = 0
 
     epoch = 1
     while epoch <= num_epochs:
@@ -65,33 +63,28 @@ def run():
             optimizer.step()
             running_loss += loss.item()
 
-            if batch_num % output_period == 0:
+            if batch_num % out_period == 0:
                 print('[%d:%.2f] loss: %.3f' %
                       (epoch, batch_num * 1.0 / num_train_batches,
-                       running_loss / output_period))
+                       running_loss / out_period))
                 running_loss = 0.0
                 gc.collect()
 
         gc.collect()
+        # save after every epoch
+        torch.save(model.state_dict(), "models/model.%d" % epoch)
 
-        model.eval()
-        # model.
-        # TODO: Calculate classification error and Top-5 Error
+        # Calculate classification error and Top-5 Error
         # on training and validation datasets here
-        printAndGetAccuracy(train_loader, device, model, "TRAINSET", epoch)
-        _, val5 =printAndGetAccuracy(val_loader, device, model, "VALSET", epoch)
-
-        if val5 > best_val_accuracy:
-            best_val_accuracy = val5
-            # save after every epoch that the validation accuracy improved
-            model.train() #not sure if this matters lol
-            torch.save(model.state_dict(), "models/model.%d" % epoch)
+        model.eval()
+        printAccuracy(train_loader, device, model, "TRAINSET", epoch)
+        printAccuracy(val_loader, device, model, "VALSET", epoch)
 
 
         gc.collect()
         epoch += 1
 
-def printAndGetAccuracy(loader, device, model, name, epoch, max_iters=10000):
+def printAccuracy(loader, device, model, name, epoch, max_iters=10000):
     num1 = 0
     num5 = 0
     total = 0
@@ -111,14 +104,13 @@ def printAndGetAccuracy(loader, device, model, name, epoch, max_iters=10000):
             break
     print(epoch, name, "TOP 1:", str(num1/total))
     print(epoch, name, "TOP 5:", str(num5/total))
-    return (num1/total, num5/total)
 
 
 if __name__ == '__main__' and platform.system() == "Windows":
     print('Starting training')
-    run()
+    run(number_of_epochs, output_period, size_of_batch, model_to_use)
     print('Training terminated')
 elif platform.system() != "Windows":
     print('Starting training NOTWINDOWS')
-    run()
+    run(number_of_epochs, output_period, size_of_batch, model_to_use)
     print('Training terminated')
