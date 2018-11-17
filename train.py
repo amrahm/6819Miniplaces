@@ -16,13 +16,13 @@ import platform
 
 def run():
     # Parameters
-    num_epochs = 5 #avoids overfitting
+    num_epochs = 500
     output_period = 100
-    batch_size = 64
+    batch_size = 32
 
     # setup the device for running
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = resnet_50()
+    model = resnet_34()
     model = model.to(device)
 
     train_loader, val_loader = dataset.get_data_loaders(batch_size)
@@ -34,6 +34,8 @@ def run():
     # optimizer = optim.SGD(model.parameters(), lr=1e-3, nesterov=True)
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
     # optimizer = optim.Nesterov(model.parameters(), lr=1e-3)
+
+    best_val_accuracy = 0
 
     epoch = 1
     while epoch <= num_epochs:
@@ -71,20 +73,25 @@ def run():
                 gc.collect()
 
         gc.collect()
-        # save after every epoch
-        torch.save(model.state_dict(), "models/model.%d" % epoch)
 
+        model.eval()
         # model.
         # TODO: Calculate classification error and Top-5 Error
         # on training and validation datasets here
-        printAccuracy(train_loader, device, model, "TRAINSET", epoch)
-        printAccuracy(val_loader, device, model, "VALSET", epoch)
+        printAndGetAccuracy(train_loader, device, model, "TRAINSET", epoch)
+        _, val5 =printAndGetAccuracy(val_loader, device, model, "VALSET", epoch)
+
+        if val5 > best_val_accuracy:
+            best_val_accuracy = val5
+            # save after every epoch that the validation accuracy improved
+            model.train() #not sure if this matters lol
+            torch.save(model.state_dict(), "models/model.%d" % epoch)
 
 
         gc.collect()
         epoch += 1
 
-def printAccuracy(loader, device, model, name, epoch):
+def printAndGetAccuracy(loader, device, model, name, epoch, max_iters=10000):
     num1 = 0
     num5 = 0
     total = 0
@@ -92,7 +99,7 @@ def printAccuracy(loader, device, model, name, epoch):
         inputs = inputs.to(device)
         labels = labels.to(device)
         outputs = model(inputs)
-        top5 = torch.topk(outputs,5)[1]
+        top5 = torch.topk(outputs, 5)[1]
         # top1 = torch.topk(outputs,1)[1]
         for i in range(len(inputs)):
             # print("\nlabel:", labels[i].item(),"\nTop 5:", top5[i])
@@ -100,8 +107,11 @@ def printAccuracy(loader, device, model, name, epoch):
             num1 += 1 if labels[i].item() == top1.item() else 0
             num5 += 1 if labels[i].item() in top5[i] else 0
             total += 1
+        if total >= max_iters:
+            break
     print(epoch, name, "TOP 1:", str(num1/total))
     print(epoch, name, "TOP 5:", str(num5/total))
+    return (num1/total, num5/total)
 
 
 if __name__ == '__main__' and platform.system() == "Windows":
