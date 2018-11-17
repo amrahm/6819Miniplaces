@@ -18,11 +18,11 @@ def run():
     # Parameters
     num_epochs = 5 #avoids overfitting
     output_period = 100
-    batch_size = 50 if platform.system() == "Windows" else 100
+    batch_size = 64
 
     # setup the device for running
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = resnet_18()
+    model = resnet_50()
     model = model.to(device)
 
     train_loader, val_loader = dataset.get_data_loaders(batch_size)
@@ -31,8 +31,9 @@ def run():
     criterion = nn.CrossEntropyLoss().to(device)
     # optimizer is currently unoptimized
     # there's a lot of room for improvement/different optimizers
-    # optimizer = optim.SGD(model.parameters(), lr=1e-1, weight_decay=1e-3, momentum=0.9)
+    # optimizer = optim.SGD(model.parameters(), lr=1e-3, nesterov=True)
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
+    # optimizer = optim.Nesterov(model.parameters(), lr=1e-3)
 
     epoch = 1
     while epoch <= num_epochs:

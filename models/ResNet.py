@@ -64,16 +64,16 @@ class Bottleneck(nn.Module):
         residual = self.downsample(x) if hasattr(self, 'downsample') else x
 
         output = self.Conv1(x)
-        output = F.relu(self.BN1(output))
+        output = F.leaky_relu(self.BN1(output), inplace=True)
 
         output = self.Conv2(output)
-        output = F.relu(self.BN2(output))
+        output = F.leaky_relu(self.BN2(output), inplace=True)
 
         output = self.Conv3(output)
         output = self.BN3(output)
 
         output += residual
-        output = F.relu(output)
+        output = F.leaky_relu(output, inplace=True)
 
         return output
 
