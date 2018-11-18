@@ -12,11 +12,12 @@ from tqdm import tqdm
 import dataset
 from models.AlexNet import *
 from models.ResNet import *
+from models.SENet import *
 #import parameters (not sure if all are needed)
 number_of_epochs = 500
 output_period = 100
 size_of_batch = 32
-model_to_use = resnet_34()
+model_to_use = se_resnext50_32x4d()
 
 torch.backends.cudnn.benchmark = True
 

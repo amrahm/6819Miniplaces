@@ -10,6 +10,7 @@ torch.backends.cudnn.benchmark = True
 import dataset
 from models.AlexNet import *
 from models.ResNet import *
+from models.SENet import *
 from tqdm import tqdm
 import platform
 
@@ -18,7 +19,8 @@ import platform
 number_of_epochs = 500
 output_period = 100
 size_of_batch = 32
-model_to_use = resnet_34()
+# model_to_use = se_resnet50()
+model_to_use = se_resnext50_32x4d()
 
 def run(num_epochs, out_period, batch_size, model):
     # setup the device for running
