@@ -306,7 +306,7 @@ def senet154(num_classes=100):
 
 def se_resnet50ali(num_classes=100):
     model = SENet(SEResNetBottleneck, [3, 4, 6, 3], groups=1, reduction=16,
-                  dropout_p=None, inplanes=64, input_3x3=False,
+                  dropout_p=0.15, inplanes=64, input_3x3=False,
                   downsample_kernel_size=1, downsample_padding=0,
                   num_classes=num_classes)
     return model
