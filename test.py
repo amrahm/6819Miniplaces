@@ -16,8 +16,8 @@ from models.SENet import *
 #import parameters (not sure if all are needed)
 number_of_epochs = 500
 output_period = 100
-size_of_batch = 32
-model_to_use = resnet_18()
+size_of_batch = 10
+model_to_use = resnet_alitinyleaky()
 
 torch.backends.cudnn.benchmark = True
 

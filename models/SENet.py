@@ -9,7 +9,7 @@ import math
 import torch.nn as nn
 from torch.utils import model_zoo
 
-__all__ = ['SENet', 'senet154', 'se_resnet50', 'se_resnet50ali', 'se_resnet101', 'se_resnet152',
+__all__ = ['SENet', 'senet154', 'se_resnet50', 'se_resnet50ali', 'se_resnetsmallali', 'se_resnet101', 'se_resnet152',
            'se_resnext50_32x4d', 'se_resnext101_32x4d']
 
 class SEModule(nn.Module):
@@ -300,13 +300,20 @@ class SENet(nn.Module):
 
 
 def senet154(num_classes=100):
-    model = SENet(SEBottleneck, [3, 8, 36, 3], groups=64, reduction=16,
+    model = SENet(SEBottleneck, [1, 2, 4, 2], groups=64, reduction=16,
                   dropout_p=0.2, num_classes=num_classes)
     return model
 
 def se_resnet50ali(num_classes=100):
     model = SENet(SEResNetBottleneck, [3, 4, 6, 3], groups=1, reduction=16,
                   dropout_p=0.15, inplanes=64, input_3x3=False,
+                  downsample_kernel_size=1, downsample_padding=0,
+                  num_classes=num_classes)
+    return model
+
+def se_resnetsmallali(num_classes=100):
+    model = SENet(SEResNetBottleneck, [2, 1, 1, 1], groups=1, reduction=12,
+                  dropout_p=0.1, inplanes=64, input_3x3=False,
                   downsample_kernel_size=1, downsample_padding=0,
                   num_classes=num_classes)
     return model

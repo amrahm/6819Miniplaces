@@ -9,8 +9,9 @@ class BasicBlock(nn.Module):
 
     expansion = 1
 
-    def __init__(self, in_planes, out_planes, stride=1):
+    def __init__(self, in_planes, out_planes, stride=1, leaky=False):
         super(BasicBlock, self).__init__()
+        self.leaky = leaky
 
         self.Conv1 = nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=False)
         self.BN1 = nn.BatchNorm2d(out_planes)
@@ -28,13 +29,19 @@ class BasicBlock(nn.Module):
         residual = self.downsample(x) if hasattr(self, 'downsample') else x
 
         output = self.Conv1(x)
-        output = F.relu(self.BN1(output))
+        if self.leaky:
+            output = F.leaky_relu(self.BN1(output))
+        else:
+            output = F.relu(self.BN1(output))
 
         output = self.Conv2(output)
         output = self.BN2(output)
 
         output += residual
-        output = F.relu(output)
+        if self.leaky:
+            output = F.leaky_relu(output)
+        else:
+            output = F.relu(output)
 
         return output
 
@@ -43,8 +50,9 @@ class Bottleneck(nn.Module):
 
     expansion = 4
 
-    def __init__(self, in_planes, out_planes, stride=1):
+    def __init__(self, in_planes, out_planes, stride=1, leaky=False):
         super(Bottleneck, self).__init__()
+        self.leaky = leaky
 
         self.Conv1 = nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=1, bias=False)
         self.BN1 = nn.BatchNorm2d(out_planes)
@@ -64,16 +72,25 @@ class Bottleneck(nn.Module):
         residual = self.downsample(x) if hasattr(self, 'downsample') else x
 
         output = self.Conv1(x)
-        output = F.leaky_relu(self.BN1(output), inplace=True)
+        if self.leaky:
+            output = F.leaky_relu(self.BN1(output), inplace=True)
+        else:
+            output = F.relu(self.BN1(output), inplace=True)
 
         output = self.Conv2(output)
-        output = F.leaky_relu(self.BN2(output), inplace=True)
+        if self.leaky:
+            output = F.leaky_relu(self.BN2(output), inplace=True)
+        else:
+            output = F.relu(self.BN2(output), inplace=True)
 
         output = self.Conv3(output)
         output = self.BN3(output)
 
         output += residual
-        output = F.leaky_relu(output, inplace=True)
+        if self.leaky:
+            output = F.leaky_relu(output, inplace=True)
+        else:
+            output = F.relu(output, inplace=True)
 
         return output
 
@@ -83,21 +100,22 @@ class ResNet(nn.Module):
     pre activated version of resnet
     """
 
-    def __init__(self, block, layers, num_classes=100):
+    def __init__(self, block, layers, num_classes=100, leaky=False):
         super(ResNet, self).__init__()
 
+        self.leaky = leaky
         self.in_planes = 64
 
         self.Conv1 = nn.Conv2d(3, self.in_planes, kernel_size=7, stride=2, padding=3, bias=False)
         self.BN1 = nn.BatchNorm2d(self.in_planes)
 
-        self.layer1 = self._make_layer(block, 64, layers[0], stride=1)
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
+        self.layer1 = self._make_layer(block, 64, layers[0], stride=1, leaky=leaky)
+        self.layer2 = self._make_layer(block, 128, layers[1], stride=2, leaky=leaky)
+        self.layer3 = self._make_layer(block, 256, layers[2], stride=2, leaky=leaky)
+        # self.layer4 = self._make_layer(block, 512, layers[3], stride=2, leaky=leaky)
 
-        self.avgpool = nn.AvgPool2d(8)
-        self.fc = nn.Linear(512 * block.expansion, num_classes)
+        self.avgpool = nn.AvgPool2d(16)
+        self.fc = nn.Linear(256 * block.expansion, num_classes)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -107,7 +125,7 @@ class ResNet(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
-    def _make_layer(self, block, out_planes, blocks, stride=1):
+    def _make_layer(self, block, out_planes, blocks, stride=1, leaky=False):
         layers = []
         layers.append(block(self.in_planes, out_planes, stride))
         self.in_planes = out_planes * block.expansion
@@ -123,7 +141,7 @@ class ResNet(nn.Module):
         output = self.layer1(output)
         output = self.layer2(output)
         output = self.layer3(output)
-        output = self.layer4(output)
+        # output = self.layer4(output)
 
         output = self.avgpool(output)
         output = output.view(x.size(0), -1)
@@ -138,13 +156,24 @@ class ResNet(nn.Module):
         output = self.layer1(output)
         output = self.layer2(output)
         output = self.layer3(output)
-        output = self.layer4(output)
+        # output = self.layer4(output)
 
         output = self.avgpool(output)
         output = output.view(x.size(0), -1)
 
         return output
 
+def resnet_ali():
+    model = ResNet(BasicBlock, [2, 2, 1, 1])
+    return model
+
+def resnet_alitinyleaky():
+    model = ResNet(BasicBlock, [1, 1, 1, 1], leaky=True)
+    return model
+
+def resnet_alitiny():
+    model = ResNet(BasicBlock, [1, 1, 1, 1])
+    return model
 
 def resnet_18():
     model = ResNet(BasicBlock, [2, 2, 2, 2])

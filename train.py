@@ -18,10 +18,8 @@ import platform
 # Parameters
 number_of_epochs = 500
 output_period = 100
-size_of_batch = 16
-model_to_use = se_resnet50ali()
-# model_to_use = se_resnet50()
-# model_to_use = se_resnext50_32x4d()
+size_of_batch = 8
+model_to_use = senet154()
 
 def run(num_epochs, out_period, batch_size, model):
     # setup the device for running
@@ -35,13 +33,14 @@ def run(num_epochs, out_period, batch_size, model):
     # optimizer is currently unoptimized
     # there's a lot of room for improvement/different optimizers
     # optimizer = optim.SGD(model.parameters(), lr=1e-3, nesterov=True)
-    optimizer = optim.Adam(model.parameters(), lr=1e-3,)
+    optimizer = optim.Adam(model.parameters(), lr=1e-3)
     # optimizer = optim.Nesterov(model.parameters(), lr=1e-3)
 
     epoch = 1
     while epoch <= num_epochs:
         running_loss = 0.0
         for param_group in optimizer.param_groups:
+            param_group['lr'] = max(param_group['lr'] * 0.97, 1e-4)
             print('Current learning rate: ' + str(param_group['lr']))
         model.train()
 

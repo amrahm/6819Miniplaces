@@ -20,7 +20,7 @@ output_period = 100
 size_of_batch = 10
 # model_to_use = se_resnet50()
 # model_to_use = se_resnext50_32x4d()
-model_to_use = resnet_18()
+model_to_use = resnet_alitinyleaky()
 
 
 def run(num_epochs, out_period, batch_size, model):
@@ -80,7 +80,7 @@ def printAccuracy(loader, device, model, name, epoch, max_iters=10000):
     num1 = 0
     num5 = 0
     total = 0
-    for (inputs, labels) in tqdm(loader):
+    for (inputs, labels) in loader:
         inputs = inputs.to(device)
         labels = labels.to(device)
         outputs = model(inputs)
