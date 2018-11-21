@@ -14,11 +14,19 @@ from models.SENet import *
 from tqdm import tqdm
 import platform
 
+import torchvision.models as models
+# resnet18 = models.resnet18()
+# alexnet = models.alexnet()
+# vgg16 = models.vgg16()
+# squeezenet = models.squeezenet1_0()
+# densenet = models.densenet161()
+# inception = models.inception_v3()
+
 
 # Parameters
 number_of_epochs = 500
 output_period = 100
-size_of_batch = 8
+size_of_batch = 50
 model_to_use = senet154()
 
 def run(num_epochs, out_period, batch_size, model):
@@ -36,12 +44,14 @@ def run(num_epochs, out_period, batch_size, model):
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
     # optimizer = optim.Nesterov(model.parameters(), lr=1e-3)
 
+    # printAccuracy(train_loader, device, model, "TRAINSET", 1)
+
     epoch = 1
     while epoch <= num_epochs:
         running_loss = 0.0
         for param_group in optimizer.param_groups:
             param_group['lr'] = max(param_group['lr'] * 0.97, 1e-4)
-            print('Current learning rate: ' + str(param_group['lr']))
+            tqdm.write('Current learning rate: ' + str(param_group['lr']))
         model.train()
 
         for batch_num, (inputs, labels) in enumerate(tqdm(train_loader), 1):
@@ -52,6 +62,7 @@ def run(num_epochs, out_period, batch_size, model):
 
             optimizer.zero_grad()
             outputs = model(inputs)
+            # outputs, aux = model(inputs)
             # print(outputs.size())
             # print(torch.topk(outputs,5))
             # top5 = torch.topk(outputs,5)[1]
@@ -66,7 +77,7 @@ def run(num_epochs, out_period, batch_size, model):
             running_loss += loss.item()
 
             if batch_num % out_period == 0:
-                print('[%d:%.2f] loss: %.3f' %
+                tqdm.write('[%d:%.2f] loss: %.3f' %
                       (epoch, batch_num * 1.0 / num_train_batches,
                        running_loss / out_period))
                 running_loss = 0.0
@@ -79,8 +90,13 @@ def run(num_epochs, out_period, batch_size, model):
         # Calculate classification error and Top-5 Error
         # on training and validation datasets here
         model.eval()
-        printAccuracy(train_loader, device, model, "TRAINSET", epoch)
-        printAccuracy(val_loader, device, model, "VALSET", epoch)
+        try:
+            printAccuracy(train_loader, device, model, "TRAINSET", epoch)
+            printAccuracy(val_loader, device, model, "VALSET", epoch)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            pass
 
 
         gc.collect()
@@ -90,7 +106,8 @@ def printAccuracy(loader, device, model, name, epoch, max_iters=10000):
     num1 = 0
     num5 = 0
     total = 0
-    for (inputs, labels) in tqdm(loader):
+    iterator = tqdm(loader)
+    for (inputs, labels) in iterator:
         inputs = inputs.to(device)
         labels = labels.to(device)
         outputs = model(inputs)
@@ -103,16 +120,17 @@ def printAccuracy(loader, device, model, name, epoch, max_iters=10000):
             num5 += 1 if labels[i].item() in top5[i] else 0
             total += 1
         if total > max_iters:
+            iterator.close()
             break
-    print(epoch, name, "TOP 1:", str(num1/total))
-    print(epoch, name, "TOP 5:", str(num5/total))
+    tqdm.write("{} {} TOP 1: {}".format(epoch, name, num1/total))
+    tqdm.write("{} {} TOP 5: {}".format(epoch, name, num5/total))
 
 
 if __name__ == '__main__' and platform.system() == "Windows":
-    print('Starting training')
+    tqdm.write('Starting training')
     run(number_of_epochs, output_period, size_of_batch, model_to_use)
-    print('Training terminated')
+    tqdm.write('Training terminated')
 elif platform.system() != "Windows":
-    print('Starting training NOTWINDOWS')
+    tqdm.write('Starting training NOTWINDOWS')
     run(number_of_epochs, output_period, size_of_batch, model_to_use)
-    print('Training terminated')
+    tqdm.write('Training terminated')

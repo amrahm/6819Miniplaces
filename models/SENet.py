@@ -300,7 +300,7 @@ class SENet(nn.Module):
 
 
 def senet154(num_classes=100):
-    model = SENet(SEBottleneck, [1, 2, 4, 2], groups=64, reduction=16,
+    model = SENet(SEBottleneck, [1, 2, 3, 1], groups=64, reduction=16,
                   dropout_p=0.2, num_classes=num_classes)
     return model
 

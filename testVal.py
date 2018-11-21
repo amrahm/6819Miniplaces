@@ -20,7 +20,7 @@ output_period = 100
 size_of_batch = 10
 # model_to_use = se_resnet50()
 # model_to_use = se_resnext50_32x4d()
-model_to_use = resnet_alitinyleaky()
+model_to_use = senet154()
 
 
 def run(num_epochs, out_period, batch_size, model):
